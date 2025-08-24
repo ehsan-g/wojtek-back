@@ -52,10 +52,7 @@ services:
       - redisdata:/data
       - ./secrets/redis_password:/run/secrets/redis_password:ro
     # Start Redis with password read from docker secret at /run/secrets/redis_password
-    command: [
-      "sh", "-c",
-      "if [ -f /run/secrets/redis_password ]; then REDISPASS=$(cat /run/secrets/redis_password); exec redis-server --requirepass \"$REDISPASS\" --appendonly yes; else exec redis-server --appendonly yes; fi"
-    ]
+    command: ["sh","-c","REDISPASS=$(cat /run/secrets/redis_password); exec redis-server --requirepass \"$REDISPASS\" --appendonly yes"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
