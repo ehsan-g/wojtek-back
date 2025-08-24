@@ -1,0 +1,32 @@
+version: "3.8"
+
+services:
+  traefik:
+    command:
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --api.dashboard=true
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --certificatesresolvers.le.acme.tlschallenge=true
+      - --certificatesresolvers.le.acme.email=${LETSENCRYPT_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --accesslog=true
+    ports:
+      - "80:80"
+      - "443:443"
+    env_file:
+      - .env.prod
+    # no insecure dashboard on 8080 in prod!
+
+  db:
+    env_file:
+      - .env.prod
+
+  app:
+    image: "${APP_IMAGE:-nest-app:latest}"
+    env_file:
+      - .env.prod
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      TZ: ${TZ:-UTC}

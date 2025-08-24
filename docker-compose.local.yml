@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis-local
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - web
+      - internal
+  app:
+    ports:
+      - "${APP_PORT:-2008}:2008"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - "traefik.http.routers.nestapp.rule=Host(`localhost`)"
+      - "traefik.http.routers.nestapp.entrypoints=web"
+      - "traefik.http.services.nestapp.loadbalancer.server.port=${APP_PORT}"
+    env_file:
+      - .env.local
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

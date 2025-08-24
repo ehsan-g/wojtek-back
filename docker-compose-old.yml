@@ -1,0 +1,131 @@
+
+
+
+services:
+
+  traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    restart: unless-stopped
+    # Traefik flags reference env values from the .env file (docker-compose loads .env automatically)
+    command:
+      # EntryPoints
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      # Enable Traefik dashboard
+      - --api.dashboard=true
+      - --api.insecure=true
+      # Docker provider
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      # Let's Encrypt configuration (PRODUCTION CA)
+      # - --certificatesresolvers.le.acme.tlschallenge=true  # only production
+      - --certificatesresolvers.le.acme.email=${LETSENCRYPT_EMAIL}
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+
+      # Use HTTP-01 challenge (staging while testing)
+      - --certificatesresolvers.le.acme.httpChallenge.entryPoint=web
+      - --certificatesresolvers.le.acme.caserver=https://acme-staging-v02.api.letsencrypt.org/directory # only staging
+
+        # (Optional) Access logs
+      - --accesslog=true
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # dashboard (disable in prod if you want)
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - web
+
+  db:
+    image: postgres:15-alpine
+    container_name: nest-postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # env vars inside container (sourced from .env)
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nest-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Ensure the app connects to the Postgres service (use service name `db`, not localhost)
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      TZ: Asia/Tehran
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    labels:
+    - "traefik.enable=true"
+    - 'traefik.docker.network=web'
+    # ACME-exempt router — Traefik will serve the challenge itself (NO service)
+    - 'traefik.http.routers.nestapp-acme.rule=Host("${DOMAIN}") && PathPrefix("/.well-known/acme-challenge")'
+    - 'traefik.http.routers.nestapp-acme.entrypoints=web'
+    - 'traefik.http.routers.nestapp-acme.priority=200'
+
+    # normal HTTP router (redirects to HTTPS) — forwards to the app service
+    - 'traefik.http.routers.nestapp-http.rule=Host("${DOMAIN}")'
+    - 'traefik.http.routers.nestapp-http.entrypoints=web'
+    - 'traefik.http.routers.nestapp-http.priority=10'
+    - 'traefik.http.routers.nestapp-http.middlewares=redirect-to-https'
+    - 'traefik.http.routers.nestapp-http.service=nestapp-svc'
+
+    # HTTPS router (TLS + cert resolver)
+    - 'traefik.http.routers.nestapp-https.rule=Host("${DOMAIN}")'
+    - 'traefik.http.routers.nestapp-https.entrypoints=websecure'
+    - 'traefik.http.routers.nestapp-https.tls=true'
+    - 'traefik.http.routers.nestapp-https.tls.certresolver=le'
+    - 'traefik.http.routers.nestapp-https.service=nestapp-svc'
+    - 'traefik.http.services.nestapp-svc.loadbalancer.server.port=${APP_PORT}'
+
+    # redirect middleware
+    - 'traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https'
+
+    networks:
+      - web
+      - internal
+  redis:
+    image: redis:7-alpine
+    container_name: redis-local
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+volumes:
+  pgdata:
+  letsencrypt:
+
+networks:
+  web:
+    driver: bridge
+  internal:
+    driver: bridge
