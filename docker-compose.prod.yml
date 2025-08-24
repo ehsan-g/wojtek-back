@@ -52,6 +52,7 @@ services:
     # Persist data
     volumes:
       - redisdata:/data
+      - ./secrets/redis_password:/run/secrets/redis_password:ro
     # Start Redis with password read from docker secret at /run/secrets/redis_password
     command: [
       "sh", "-c",
@@ -84,8 +85,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    secrets:
-      - redis_password
+    volumes:
+      - ./secrets/redis_password:/run/secrets/redis_password:ro
     labels:
       - "traefik.enable=true"
       - "traefik.docker.network=web"
