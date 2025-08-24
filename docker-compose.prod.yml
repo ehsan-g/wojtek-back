@@ -2,10 +2,12 @@ version: "3.8"
 
 services:
   traefik:
+    image: traefik:v3.1
+    container_name: traefik
+    restart: unless-stopped
     command:
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --api.dashboard=true
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --certificatesresolvers.le.acme.tlschallenge=true
@@ -15,18 +17,103 @@ services:
     ports:
       - "80:80"
       - "443:443"
-    env_file:
-      - .env.prod
-    # no insecure dashboard on 8080 in prod!
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./letsencrypt:/letsencrypt
+    networks:
+      - web
 
   db:
+    image: postgres:15-alpine
+    container_name: nest-postgres
+    restart: unless-stopped
     env_file:
       - .env.prod
+    # Consider using Docker secrets for POSTGRES_PASSWORD in production
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    restart: unless-stopped
+    # Do NOT publish Redis to the host in prod
+    # Persist data
+    volumes:
+      - redisdata:/data
+    # Start Redis with password read from docker secret at /run/secrets/redis_password
+    command: [
+      "sh", "-c",
+      "if [ -f /run/secrets/redis_password ]; then REDISPASS=$(cat /run/secrets/redis_password); exec redis-server --requirepass \"$REDISPASS\" --appendonly yes; else exec redis-server --appendonly yes; fi"
+    ]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    secrets:
+      - redis_password
+    networks:
+      - internal
 
   app:
     image: "${APP_IMAGE:-nest-app:latest}"
+    container_name: nest-app
+    restart: unless-stopped
     env_file:
       - .env.prod
     environment:
       DATABASE_URL: ${DATABASE_URL}
+      # We do NOT put redis password directly in env. Instead provide access to secret file:
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      REDIS_PASSWORD_FILE: /run/secrets/redis_password
       TZ: ${TZ:-UTC}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    secrets:
+      - redis_password
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=web"
+      - 'traefik.http.routers.nestapp-http.rule=Host("${DOMAIN}")'
+      - 'traefik.http.routers.nestapp-http.entrypoints=web'
+      - 'traefik.http.routers.nestapp-http.middlewares=redirect-to-https'
+      - 'traefik.http.routers.nestapp-http.priority=10'
+      - 'traefik.http.routers.nestapp-svc.rule=Host("${DOMAIN}")'
+      - 'traefik.http.routers.nestapp-svc.entrypoints=websecure'
+      - 'traefik.http.routers.nestapp-svc.tls=true'
+      - 'traefik.http.routers.nestapp-svc.tls.certresolver=le'
+      - 'traefik.http.services.nestapp-svc.loadbalancer.server.port=${APP_PORT}'
+      - 'traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https'
+    networks:
+      - web
+      - internal
+
+volumes:
+  pgdata:
+  redisdata:
+  letsencrypt:
+
+networks:
+  web:
+    driver: bridge
+  internal:
+    driver: bridge
+
+secrets:
+  redis_password:
+    external: true
