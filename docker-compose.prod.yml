@@ -46,6 +46,8 @@ services:
     image: redis:7-alpine
     container_name: redis
     restart: unless-stopped
+    ports:
+      - "6379:6379"
     # Do NOT publish Redis to the host in prod
     # Persist data
     volumes:
