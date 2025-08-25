@@ -62,6 +62,8 @@ services:
       - internal
 
   app:
+    ports:
+      - "${APP_PORT:-2008}:2008"
     image: "${APP_IMAGE:-nest-app:latest}"
     container_name: nest-app
     restart: unless-stopped
