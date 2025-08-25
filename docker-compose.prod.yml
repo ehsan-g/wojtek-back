@@ -8,6 +8,7 @@ services:
       - --entrypoints.websecure.address=:443
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
       - --certificatesresolvers.le.acme.tlschallenge=true
       - --certificatesresolvers.le.acme.email=${LETSENCRYPT_EMAIL}
       - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
@@ -94,7 +95,7 @@ services:
       - 'traefik.http.routers.nestapp-svc.rule=Host("${DOMAIN}")'
       - 'traefik.http.routers.nestapp-svc.entrypoints=websecure'
       - 'traefik.http.routers.nestapp-svc.tls=true'
-      - 'traefik.http.routers.nestapp-svc.tls.certresolver=le'
+      - 'traefik.http.routers.nestapp-svc.tls.certresolver=letsencrypt'
       - 'traefik.http.services.nestapp-svc.loadbalancer.server.port=${APP_PORT}'
       - 'traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https'
     networks:
