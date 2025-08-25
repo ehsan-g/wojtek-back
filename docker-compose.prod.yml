@@ -87,7 +87,7 @@ services:
       - ./secrets/redis_password:/run/secrets/redis_password:ro
     labels:
       - "traefik.enable=true"
-      - "traefik.docker.network=web"
+      - "traefik.docker.network=wojtek-back_web"
       - 'traefik.http.routers.nestapp-http.rule=Host("${DOMAIN}")'
       - 'traefik.http.routers.nestapp-http.entrypoints=web'
       - 'traefik.http.routers.nestapp-http.middlewares=redirect-to-https'
