@@ -11,31 +11,11 @@ import {
 } from "typeorm";
 import { UserEntity } from "../../users/user.entity";
 import { ReportEntity } from "../../reports/entities/report.entity";
-import { DeviceEnum } from "../../enum/device.enum";
-import { DeviceCertEntity } from "./device-cert.entity";
 
 @Entity("devices")
-export class DeviceEntity {
+export class DeviceEntity2 {
   @PrimaryGeneratedColumn("uuid")
   id: string;
-
-  @Column()
-  type: DeviceEnum;
-
-  @Column({ type: 'text' })
-  status: string; 
-
-  @Column({ default: 0 })
-  tokenVersion: number; // increment to revoke all previously issued tokens
-
-  @Column({ default: false })
-  revoked: boolean;
-
-  @OneToMany(() => DeviceCertEntity, cert => cert.device)
-  certs: DeviceCertEntity[];
-
-  @Column({ nullable: false })
-  hashedSecret: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -51,6 +31,7 @@ export class DeviceEntity {
   @Column({ nullable: false })
   ownerId: string;
 
+  @Column({ nullable: true })
   @OneToMany(() => ReportEntity, (report) => report.theDevice, {
     cascade: true,
   })

@@ -47,7 +47,7 @@ export class EnrollController {
 
   @Get("temp/:id")
   async temp(@Param("id", new ParseUUIDPipe()) id: string) {
-    return this.reportService.createMotionReport(
+    return this.reportService.createMotionReport2(
       id,
       "56f384ee-3715-45f2-b0e8-10320023935b"
     );
