@@ -92,7 +92,7 @@ export class DeviceService {
       .getMany();
   }
 
-  async findByOwner2(ownerId: string): Promise<DeviceEntity[]> {
+  async findByOwner2(ownerId: string): Promise<DeviceEntity2[]> {
     return this.deviceRepository2
       .createQueryBuilder("device")
       .leftJoinAndSelect("device.reports", "report")
