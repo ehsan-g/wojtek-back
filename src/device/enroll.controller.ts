@@ -1,11 +1,23 @@
-import { Controller, Post, Body, BadRequestException } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Body,
+  BadRequestException,
+  Param,
+  ParseUUIDPipe,
+  Get,
+} from "@nestjs/common";
 import { EnrollService } from "./enroll.service";
 import { ApiTags } from "@nestjs/swagger";
+import { ReportsService } from "../reports/reports.service";
 
 @ApiTags("devices/enroll")
 @Controller("device/enroll")
 export class EnrollController {
-  constructor(private readonly enrollService: EnrollService) {}
+  constructor(
+    private readonly enrollService: EnrollService,
+    private readonly reportService: ReportsService
+  ) {}
 
   @Post("challenge")
   async challenge(@Body() body: { deviceId: string }) {
@@ -33,14 +45,11 @@ export class EnrollController {
     return { cert: certPem };
   }
 
-  @Get("temp")
-  async temp() {
-    const certPem = await this.enrollService.verifyAndIssue(
-      body.deviceId,
-      body.csrPem,
-      body.nonce,
-      body.signatureB64
+  @Get("temp/:id")
+  async temp(@Param("id", new ParseUUIDPipe()) id: string) {
+    return this.reportService.createMotionReport(
+      id,
+      "56f384ee-3715-45f2-b0e8-10320023935b"
     );
-    return { cert: certPem };
   }
 }

@@ -22,20 +22,21 @@ export class DeviceEntity {
   @Column()
   type: DeviceEnum;
 
-  // @Column({ type: 'text' })
-  // status: string; 
+  @Column({ nullable: true, type: "text" })
+  status: string;
 
-  // @Column({ default: 0 })
-  // tokenVersion: number; // increment to revoke all previously issued tokens
+  @Column({ default: 0 })
+  tokenVersion: number; // increment to revoke all previously issued tokens
 
-  // @Column({ default: false })
-  // revoked: boolean;
+  @Column({ default: false })
+  revoked: boolean;
 
-  // @OneToMany(() => DeviceCertEntity, cert => cert.device)
-  // certs: DeviceCertEntity[];
+  @Column({ nullable: true })
+  @OneToMany(() => DeviceCertEntity, (cert) => cert.device)
+  certs: DeviceCertEntity[];
 
-  // @Column({ nullable: false })
-  // hashedSecret: string;
+  @Column({ nullable: true })
+  hashedSecret: string;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -51,6 +52,7 @@ export class DeviceEntity {
   @Column({ nullable: false })
   ownerId: string;
 
+  @Column({ nullable: true })
   @OneToMany(() => ReportEntity, (report) => report.theDevice, {
     cascade: true,
   })
