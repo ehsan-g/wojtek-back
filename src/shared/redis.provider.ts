@@ -27,7 +27,7 @@ export const RedisProvider: Provider = {
       maxRetriesPerRequest,
       retryStrategy: (times: number) => {
         if (times > maxRetries) return null;
-        return Math.min(50 * Math.pow(2, times), 2000);
+        return Math.min(200 * Math.pow(2, times), 5000); // Increased retry backoff
       },
       connectTimeout,
       enableReadyCheck: true,
@@ -44,25 +44,53 @@ export const RedisProvider: Provider = {
     redis.on("end", () => logger.warn("Redis connection ended"));
     redis.on("reconnecting", () => logger.log("Redis reconnecting..."));
 
+    // Custom ping with retry logic
+    const attemptPing = async () => {
+      let retries = 5;
+      while (retries > 0) {
+        try {
+          await redis.ping();
+          logger.log("Connected to Redis successfully.");
+          return;
+        } catch (err) {
+          retries--;
+          if (retries <= 0) {
+            throw new Error(
+              `Failed to connect to Redis after several attempts: ${
+                err?.message ?? String(err)
+              }`
+            );
+          }
+          logger.warn(`Redis ping failed, retrying... (${5 - retries} of 5)`);
+          await new Promise((resolve) => setTimeout(resolve, 2000)); // 2 seconds retry
+        }
+      }
+    };
+
     try {
-      await redis.ping();
-      logger.log("Connected to Redis successfully.");
+      await attemptPing();
     } catch (err) {
       logger.error(
         "Failed to connect to Redis on startup — aborting application startup.",
         err?.message ?? String(err)
       );
-      try {
-        await redis.quit().catch(() => undefined);
-      } catch {}
+      await redis.quit().catch(() => undefined);
       throw new Error(
         `Cannot connect to Redis: ${err?.message ?? String(err)}`
       );
     }
+
+    // Graceful shutdown
     const cleanup = async () => {
       logger.log("Closing Redis connection...");
-      await new Promise((res) => setTimeout(res, 100)); // small delay
-      await redis.quit();
+      await redis
+        .quit()
+        .catch((err) =>
+          logger.error(
+            "Error during Redis cleanup: ",
+            err?.message ?? String(err)
+          )
+        );
       logger.log("Redis connection closed.");
     };
 
