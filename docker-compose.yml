@@ -11,12 +11,19 @@ services:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --accesslog=true
+      # Additions for mTLS for devices
+      - "--serversTransport.insecureSkipVerify=false"
+      - "--entrypoints.websecure.http.tls=true"
+      - --providers.file.directory=/etc/traefik/dynamic
+      - --providers.file.watch=true
     ports:
       - "80:80"
       - "443:443"
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./infra/traefik/dynamic.yml:/etc/traefik/dynamic/dynamic.yml:ro
+      - ./infra/traefik/certs:/etc/traefik/certs:ro   # mount CA chain and server cert if using file certs
       - ./letsencrypt:/letsencrypt
     networks:
       - web
@@ -54,9 +61,21 @@ services:
     networks:
       - web
       - internal
-
+  signer:
+    image: node:20-alpine
+    container_name: cert-signer
+    restart: unless-stopped
+    working_dir: /work
+    volumes:
+      - ./infra/ca:/ca:ro            # mount CA cert/key only accessible to signer (never commit)
+      - ./infra/ca-run:/ca-run      # writable tmp if needed
+      - ./:/work:ro                 # access to app for signing helper optionally
+    entrypoint: ["tail", "-f", "/dev/null"]
+    networks:
+      - internal
 volumes:
   pgdata:
+  redisdata:
   letsencrypt:
 
 networks:

@@ -24,13 +24,13 @@ import { diskStorage } from "multer";
 import { CreateReportDto, DeviceIssueDto } from "./dto/create-report.dto";
 import { Response, } from "express";
 import * as fs from "fs";
-import { JwtAuthGuard } from "../auth/jwt-auth.guard";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { GetUser } from "../auth/get-user.decorator";
 import { ReportEntity } from "./entities/report.entity";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { DeviceService } from "../device/device.service";
 import { DeviceEnum } from "../enum/device.enum";
-import { DeviceAuthService } from "../auth/device-auth.service";
+import { DeviceAuthService } from "../auth/services/device-auth.service";
 
 @ApiBearerAuth('bearerAuth')
 @ApiTags('reports')
@@ -43,13 +43,13 @@ export class ReportsController {
     private readonly deviceService: DeviceService
   ) { }
 
-
   // Exchange device credentials for a JWT
   @Post('issue')
   async issue(@Body() dto: DeviceIssueDto) {
     if (!dto?.deviceId || !dto?.secret) throw new BadRequestException('deviceId and secret required');
     return this.deviceAuthService.generateDeviceToken(dto.deviceId, dto.secret);
   }
+
   @UseGuards(JwtAuthGuard)
   @Post("motion/:deviceId")
   @UsePipes(new ValidationPipe({ transform: true }))

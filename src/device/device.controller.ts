@@ -1,27 +1,47 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, UsePipes, ValidationPipe, Request, ParseUUIDPipe } from '@nestjs/common';
-import { DeviceService } from './device.service';
-import { CreateDeviceDto } from './dto/create-device.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-import * as bcrypt from 'bcrypt';
-import { DeviceJwtAuthGuard } from '../auth/device-jwt.guard';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+  Request,
+  ParseUUIDPipe,
+} from "@nestjs/common";
+import { DeviceService } from "./device.service";
+import { CreateDeviceDto } from "./dto/create-device.dto";
+import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { DeviceAuthService } from "../auth/services/device-auth.service";
+import { DeviceCertGuard } from "../auth/guards/device-cert.guard";
+import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 
-@ApiBearerAuth('bearerAuth')
-@ApiTags('devices')
-@Controller('device')
+@ApiBearerAuth("bearerAuth")
+@ApiTags("devices")
+@Controller("device")
 export class DeviceController {
-  constructor(private readonly deviceService: DeviceService) { }
+  constructor(
+    private readonly deviceService: DeviceService,
+    private readonly deviceAuth: DeviceAuthService
+  ) {}
 
-  // Device-level route: device sends telemetry using device token
-  @Post('telemetry')
-  @UseGuards(DeviceJwtAuthGuard)
-  async telemetry(@Request() req, @Body() body: any) {
-    const device = req.user; // { deviceId, ownerId, claims }
-    // handle telemetry body...
-    return { ok: true, receivedFrom: device.deviceId };
+  @Get("ping")
+  @UseGuards(DeviceCertGuard)
+  ping(@Request() req: any) {
+    return { ok: true, deviceId: req.device.id, serial: req.mtls.serial };
+  }
+  @Post('token')
+  @UseGuards(DeviceCertGuard)
+  async token(@Request() req: any) {
+    // DeviceCertGuard sets req.device and req.mtls.serial
+    const deviceId = req.device.id;
+    const certSerial = req.mtls.serial;
+    return this.deviceAuth.generateDeviceTokenFromMtls(deviceId, certSerial);
   }
 
-  @Get('my')
+  @Get("my")
   @UseGuards(JwtAuthGuard)
   findMyDevices(@Request() req) {
     const userId = req.user.sub;
@@ -32,15 +52,18 @@ export class DeviceController {
   @Post()
   @UsePipes(new ValidationPipe({ transform: true }))
   async createDevice(@Request() req, @Body() dto: CreateDeviceDto) {
+    // 1- first device is created by user
+    // 2- deviceId is used to call challenge api to create nonce and start auth
+    // 3- ... refer to readMe.md
     const userId = req.user.sub;
-    return await this.deviceService.create(userId, dto);
+    return await this.deviceService.createDevice(userId, dto);
   }
 
   @UseGuards(JwtAuthGuard)
-  @Delete(':id')
+  @Delete(":id")
   async deleteDevice(
     @Request() req,
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param("id", new ParseUUIDPipe()) id: string
   ): Promise<void> {
     const userId = req.user.sub;
     await this.deviceService.delete(userId, id);

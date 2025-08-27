@@ -100,7 +100,6 @@ services:
       - 'traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https'
     networks:
       - web
-      - internal
 
 volumes:
   pgdata:

@@ -1,0 +1,35 @@
+# infra/traefik/dynamic.yml
+tls:
+  options:
+    mtls:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+      clientAuth:
+        clientAuthType: RequireAndVerifyClientCert
+        caFiles:
+          - /etc/traefik/certs/device-ca-chain.crt
+
+http:
+  middlewares:
+    passcert:
+      passTLSClientCert:
+        pem: false
+        info:
+          subject:
+            commonName: true
+            country: true
+            province: true
+            locality: true
+            organization: true
+            organizationalUnit: true
+          issuer:
+            commonName: true
+            country: true
+          serialNumber: true
+          sans: true
+          notBefore: true
+          notAfter: true

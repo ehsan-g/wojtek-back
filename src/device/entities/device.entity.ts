@@ -12,6 +12,7 @@ import {
 import { UserEntity } from "../../users/user.entity";
 import { ReportEntity } from "../../reports/entities/report.entity";
 import { DeviceEnum } from "../../enum/device.enum";
+import { DeviceCertEntity } from "./device-cert.entity";
 
 @Entity("devices")
 export class DeviceEntity {
@@ -22,7 +23,7 @@ export class DeviceEntity {
   type: DeviceEnum;
 
   @Column({ type: 'text' })
-  secretHash: string; // bcrypt hash of the device secret
+  status: string; 
 
   @Column({ default: 0 })
   tokenVersion: number; // increment to revoke all previously issued tokens
@@ -30,6 +31,8 @@ export class DeviceEntity {
   @Column({ default: false })
   revoked: boolean;
 
+  @OneToMany(() => DeviceCertEntity, cert => cert.device)
+  certs: DeviceCertEntity[];
 
   @Column({ nullable: false })
   hashedSecret: string;
