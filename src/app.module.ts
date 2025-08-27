@@ -28,7 +28,8 @@ import configuration from "./config/configuration";
         const dbName = cfg.get<string>("POSTGRES_DB");
         const port = cfg.get<number>("DB_PORT") || 5432;
 
-        const dbUrl = `postgres://${user}:${pass}@${host}:${port}/${dbName}`;
+        const dbUrl = process.env.DATABASE_URL;
+        // const dbUrl = `postgres://${user}:${pass}@${host}:${port}/${dbName}`;
 
         console.log("DATABASE_URL:", dbUrl); // log to check the value
         // test-env.js
