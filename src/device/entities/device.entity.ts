@@ -22,20 +22,20 @@ export class DeviceEntity {
   @Column()
   type: DeviceEnum;
 
-  @Column({ type: 'text' })
-  status: string; 
+  // @Column({ type: 'text' })
+  // status: string; 
 
-  @Column({ default: 0 })
-  tokenVersion: number; // increment to revoke all previously issued tokens
+  // @Column({ default: 0 })
+  // tokenVersion: number; // increment to revoke all previously issued tokens
 
-  @Column({ default: false })
-  revoked: boolean;
+  // @Column({ default: false })
+  // revoked: boolean;
 
-  @OneToMany(() => DeviceCertEntity, cert => cert.device)
-  certs: DeviceCertEntity[];
+  // @OneToMany(() => DeviceCertEntity, cert => cert.device)
+  // certs: DeviceCertEntity[];
 
-  @Column({ nullable: false })
-  hashedSecret: string;
+  // @Column({ nullable: false })
+  // hashedSecret: string;
 
   @CreateDateColumn()
   createdAt: Date;

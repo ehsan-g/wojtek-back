@@ -33,16 +33,8 @@ export class EnrollController {
     return { cert: certPem };
   }
 
-  @Post("temp")
-  async temp(
-    @Body()
-    body: {
-      deviceId: string;
-      csrPem: string;
-      nonce: string;
-      signatureB64: string;
-    }
-  ) {
+  @Get("temp")
+  async temp() {
     const certPem = await this.enrollService.verifyAndIssue(
       body.deviceId,
       body.csrPem,
