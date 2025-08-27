@@ -12,7 +12,7 @@ import {
 import { UserEntity } from "../../users/user.entity";
 import { ReportEntity } from "../../reports/entities/report.entity";
 
-@Entity("devices")
+@Entity("devices2")
 export class DeviceEntity2 {
   @PrimaryGeneratedColumn("uuid")
   id: string;
