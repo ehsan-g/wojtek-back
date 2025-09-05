@@ -4,9 +4,9 @@ FROM node:20-bullseye AS builder
 WORKDIR /usr/src/app
 
 # Install build-time deps (for sharp, bcrypt, native builds)
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends build-essential python3 pkg-config libvips-dev && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update -o Acquire::ForceIPv4=true \
+ && apt-get install -y --no-install-recommends build-essential python3 pkg-config libvips-dev \
+ && rm -rf /var/lib/apt/lists/*
 
 # Ensure a consistent Yarn version via Corepack (pin to Yarn v1.22.22 to match your lockfile)
 RUN corepack enable && corepack prepare yarn@1.22.22 --activate
