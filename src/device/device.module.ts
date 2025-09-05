@@ -17,6 +17,7 @@ import { DeviceNonceService } from "./device-nonce.service";
 import { DeviceAuthService } from "../auth/services/device-auth.service";
 import { TokenService } from "../auth/services/token.service";
 import { DeviceTelemetryController } from "./device-telemetry.controller";
+import { ReportsService } from "../reports/reports.service";
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { DeviceTelemetryController } from "./device-telemetry.controller";
     DeviceService,
     DeviceAuthService,
     EnrollService,
+    ReportsService,
     DeviceNonceService,
     TokenService,
   ],
