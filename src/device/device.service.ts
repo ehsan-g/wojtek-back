@@ -19,7 +19,6 @@ import { execFile } from "child_process";
 import * as fs from "fs/promises";
 import * as path from "path";
 import * as os from "os";
-import { DeviceEntity2 } from "./entities/device.entity2";
 
 const execFileAsync = promisify(execFile);
 
@@ -31,8 +30,6 @@ export class DeviceService {
     private readonly ds: DataSource,
     @InjectRepository(DeviceEntity)
     private readonly deviceRepository: Repository<DeviceEntity>,
-    @InjectRepository(DeviceEntity2)
-    private readonly deviceRepository2: Repository<DeviceEntity2>,
     @InjectRepository(DeviceCertEntity)
     private readonly certRepository: Repository<DeviceCertEntity>,
     @InjectRepository(DeviceNonceEntity)
@@ -85,15 +82,6 @@ export class DeviceService {
 
   async findByOwner(ownerId: string): Promise<DeviceEntity[]> {
     return this.deviceRepository
-      .createQueryBuilder("device")
-      .leftJoinAndSelect("device.reports", "report")
-      .where("device.ownerId = :ownerId", { ownerId })
-      .loadRelationCountAndMap("device.reportCount", "device.reports")
-      .getMany();
-  }
-
-  async findByOwner2(ownerId: string): Promise<DeviceEntity2[]> {
-    return this.deviceRepository2
       .createQueryBuilder("device")
       .leftJoinAndSelect("device.reports", "report")
       .where("device.ownerId = :ownerId", { ownerId })

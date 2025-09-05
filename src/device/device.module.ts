@@ -17,14 +17,12 @@ import { DeviceNonceService } from "./device-nonce.service";
 import { DeviceAuthService } from "../auth/services/device-auth.service";
 import { TokenService } from "../auth/services/token.service";
 import { DeviceTelemetryController } from "./device-telemetry.controller";
-import { DeviceEntity2 } from "./entities/device.entity2";
 
 @Module({
   imports: [
     SharedModule,
     TypeOrmModule.forFeature([
       DeviceEntity,
-      DeviceEntity2,
       DeviceNonceEntity,
       DeviceCertEntity,
       UserEntity,

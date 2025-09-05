@@ -14,7 +14,6 @@ import * as fsSync from "fs";
 import * as sharp from "sharp";
 import { ReportEntity } from "./entities/report.entity";
 import { DeviceEntity } from "../device/entities/device.entity";
-import { DeviceEntity2 } from "../device/entities/device.entity2";
 
 @Injectable()
 export class ReportsService {
@@ -27,8 +26,6 @@ export class ReportsService {
     private readonly reportRepository: Repository<ReportEntity>,
     @InjectRepository(DeviceEntity)
     private readonly deviceRepository: Repository<DeviceEntity>,
-    @InjectRepository(DeviceEntity2)
-    private readonly deviceRepository2: Repository<DeviceEntity2>
   ) {
     this.uploadDir = process.env.UPLOAD_DIR || "uploads";
     this.serveRoot = process.env.UPLOAD_SERVE_ROOT || "/uploads";
@@ -136,19 +133,6 @@ export class ReportsService {
       ownerId,
     });
     await this.deviceRepository.update(deviceId, { updatedAt: new Date() });
-
-    return await this.reportRepository.save(report);
-  }
-
-  async createMotionReport2(
-    deviceId: string,
-    ownerId: string
-  ): Promise<ReportEntity> {
-    const report = this.reportRepository.create({
-      deviceId,
-      ownerId,
-    });
-    await this.deviceRepository2.update(deviceId, { updatedAt: new Date() });
 
     return await this.reportRepository.save(report);
   }

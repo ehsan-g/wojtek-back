@@ -11,7 +11,6 @@ import { UserEntity } from "../users/user.entity";
 import { AuthModule } from "../auth/auth.module";
 import { DeviceNonceEntity } from "../device/entities/device-nonce.entity";
 import { DeviceCertEntity } from "../device/entities/device-cert.entity";
-import { DeviceEntity2 } from "../device/entities/device.entity2";
 
 @Module({
   imports: [
@@ -21,7 +20,6 @@ import { DeviceEntity2 } from "../device/entities/device.entity2";
       DeviceEntity,
       DeviceNonceEntity,
       DeviceCertEntity,
-      DeviceEntity2,
     ]),
     ServeStaticModule.forRoot({
       rootPath: path.join(process.cwd(), process.env.UPLOAD_DIR || "uploads"),
